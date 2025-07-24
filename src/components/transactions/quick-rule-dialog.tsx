@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { db } from "@/lib/supabase"
@@ -45,20 +45,24 @@ export function QuickRuleDialog({
       // Wrap the rule text with %% for pattern matching
       const matcher = `%${ruleText.trim()}%`
       
-      // Create the rule
+      // Create the rule first
       await db.createRule(matcher, selectedCategory, confidence)
       
-      // Update the current transaction with the selected category
+      // Then update the current transaction with the selected category
       await db.updateTransactionCategory(transaction.id, selectedCategory)
       
+      // Notify parent components to refresh data
       onRuleCreated()
       onOpenChange(false)
       
       // Reset form
       setSelectedCategory("")
       setConfidence(80)
+      setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create rule')
+      console.error('Error creating rule:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create rule and categorize transaction'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -69,6 +73,9 @@ export function QuickRuleDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create Rule for Transaction</DialogTitle>
+          <DialogDescription>
+            Create an automatic categorization rule based on this transaction&apos;s description.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -142,7 +149,7 @@ export function QuickRuleDialog({
               </div>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -151,7 +158,11 @@ export function QuickRuleDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading || !selectedCategory}>
+              <Button 
+                type="submit" 
+                disabled={loading || !selectedCategory}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 {loading ? 'Creating...' : 'Create Rule & Categorize'}
               </Button>
             </DialogFooter>

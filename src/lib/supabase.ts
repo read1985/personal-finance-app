@@ -43,6 +43,9 @@ export const db = {
   },
 
   async updateTransactionCategory(id: string, category: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('transactions')
       .update({ 
@@ -53,8 +56,11 @@ export const db = {
       .eq('id', id)
       .select()
     
-    if (error) throw error
-    return data[0]
+    if (error) {
+      console.error('Error updating transaction:', error)
+      throw error
+    }
+    return data?.[0]
   },
 
   // Categories
@@ -85,6 +91,9 @@ export const db = {
   },
 
   async updateCategory(id: string, updates: { name?: string; color?: string }) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('categories')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -96,6 +105,9 @@ export const db = {
   },
 
   async deleteCategory(id: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { error } = await supabase
       .from('categories')
       .delete()
@@ -132,6 +144,9 @@ export const db = {
   },
 
   async updateRule(id: string, updates: { matcher?: string; category?: string; confidence?: number }) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('rules')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -143,6 +158,9 @@ export const db = {
   },
 
   async deleteRule(id: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { error } = await supabase
       .from('rules')
       .delete()
