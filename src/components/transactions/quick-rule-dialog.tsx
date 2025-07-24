@@ -30,7 +30,7 @@ export function QuickRuleDialog({
     return merchantMatch ? merchantMatch[1].trim() : desc
   })
   const [selectedCategory, setSelectedCategory] = useState("")
-  const [confidence, setConfidence] = useState(80)
+  const [confidence, setConfidence] = useState(80) // Display as percentage
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,8 +45,8 @@ export function QuickRuleDialog({
       // Wrap the rule text with %% for pattern matching
       const matcher = `%${ruleText.trim()}%`
       
-      // Create the rule first
-      await db.createRule(matcher, selectedCategory, confidence)
+      // Create the rule first (convert percentage to decimal)
+      await db.createRule(matcher, selectedCategory, confidence / 100)
       
       // Then update the current transaction with the selected category
       await db.updateTransactionCategory(transaction.id, selectedCategory)
@@ -57,7 +57,7 @@ export function QuickRuleDialog({
       
       // Reset form
       setSelectedCategory("")
-      setConfidence(80)
+      setConfidence(80) // Reset to default percentage
       setError(null)
     } catch (err) {
       console.error('Error creating rule:', err)

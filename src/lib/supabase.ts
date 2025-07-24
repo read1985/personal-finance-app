@@ -130,16 +130,23 @@ export const db = {
     return data || []
   },
 
-  async createRule(matcher: string, category: string, confidence: number = 50) {
+  async createRule(matcher: string, category: string, confidence: number = 0.5) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
+    // Ensure confidence is in decimal format (0.0 to 1.0) for rules table (integer)
+    // But we need to store it as integer percentage for rules table
+    const confidenceForRules = Math.round(confidence * 100)
+
     const { data, error } = await supabase
       .from('rules')
-      .insert({ matcher, category, confidence, user_id: user.id })
+      .insert({ matcher, category, confidence: confidenceForRules, user_id: user.id })
       .select()
     
-    if (error) throw error
+    if (error) {
+      console.error('Error creating rule:', error)
+      throw error
+    }
     return data[0]
   },
 
@@ -147,9 +154,15 @@ export const db = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
+    // Convert confidence from decimal to percentage if provided
+    const updatesWithConversion = { ...updates }
+    if (updates.confidence !== undefined) {
+      updatesWithConversion.confidence = Math.round(updates.confidence * 100)
+    }
+
     const { data, error } = await supabase
       .from('rules')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...updatesWithConversion, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
     
