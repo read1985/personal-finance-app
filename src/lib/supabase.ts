@@ -25,12 +25,16 @@ export const db = {
       query = query.or(`description.ilike.%${search}%,category.ilike.%${search}%`)
     }
 
-    // Add date range filtering
+    // Add date range filtering with timezone support
     if (startDate) {
-      query = query.gte('posted_at', startDate)
+      // Convert local date to start of day in user's timezone
+      const startDateTime = new Date(startDate + 'T00:00:00')
+      query = query.gte('posted_at', startDateTime.toISOString())
     }
     if (endDate) {
-      query = query.lte('posted_at', endDate + 'T23:59:59.999Z')
+      // Convert local date to end of day in user's timezone
+      const endDateTime = new Date(endDate + 'T23:59:59.999')
+      query = query.lte('posted_at', endDateTime.toISOString())
     }
 
     const { data, error } = await query.range(offset, offset + limit - 1)
@@ -52,12 +56,16 @@ export const db = {
       query = query.or(`description.ilike.%${search}%,category.ilike.%${search}%`)
     }
 
-    // Add date range filtering
+    // Add date range filtering with timezone support
     if (startDate) {
-      query = query.gte('posted_at', startDate)
+      // Convert local date to start of day in user's timezone
+      const startDateTime = new Date(startDate + 'T00:00:00')
+      query = query.gte('posted_at', startDateTime.toISOString())
     }
     if (endDate) {
-      query = query.lte('posted_at', endDate + 'T23:59:59.999Z')
+      // Convert local date to end of day in user's timezone
+      const endDateTime = new Date(endDate + 'T23:59:59.999')
+      query = query.lte('posted_at', endDateTime.toISOString())
     }
 
     const { count, error } = await query
@@ -84,12 +92,16 @@ export const db = {
       query = query.ilike('description', `%${search}%`)
     }
 
-    // Add date range filtering
+    // Add date range filtering with timezone support
     if (startDate) {
-      query = query.gte('posted_at', startDate)
+      // Convert local date to start of day in user's timezone
+      const startDateTime = new Date(startDate + 'T00:00:00')
+      query = query.gte('posted_at', startDateTime.toISOString())
     }
     if (endDate) {
-      query = query.lte('posted_at', endDate + 'T23:59:59.999Z')
+      // Convert local date to end of day in user's timezone
+      const endDateTime = new Date(endDate + 'T23:59:59.999')
+      query = query.lte('posted_at', endDateTime.toISOString())
     }
 
     const { data, error } = await query
