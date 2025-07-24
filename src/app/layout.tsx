@@ -32,7 +32,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <AuthGuard>
-            <div className="flex h-screen bg-gray-100">
+            <div className="flex h-screen bg-slate-100">
               <Sidebar />
               <main className="flex-1 overflow-auto">
                 {children}

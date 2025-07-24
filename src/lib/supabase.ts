@@ -35,7 +35,7 @@ export const db = {
         *,
         account:accounts(*)
       `)
-      .or('category.is.null,needs_review.eq.true')
+      .is('category', null)
       .order('posted_at', { ascending: false })
     
     if (error) throw error
@@ -50,7 +50,6 @@ export const db = {
       .from('transactions')
       .update({ 
         category,
-        needs_review: false,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
