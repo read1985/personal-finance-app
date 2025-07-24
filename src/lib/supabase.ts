@@ -8,7 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Helper functions for database operations
 export const db = {
   // Transactions
-  async getTransactions(limit = 50, offset = 0, search = '') {
+  async getTransactions(limit = 50, offset = 0, search = '', startDate = '', endDate = '') {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
@@ -25,13 +25,21 @@ export const db = {
       query = query.or(`description.ilike.%${search}%,category.ilike.%${search}%`)
     }
 
+    // Add date range filtering
+    if (startDate) {
+      query = query.gte('posted_at', startDate)
+    }
+    if (endDate) {
+      query = query.lte('posted_at', endDate + 'T23:59:59.999Z')
+    }
+
     const { data, error } = await query.range(offset, offset + limit - 1)
     
     if (error) throw error
     return data || []
   },
 
-  async getTransactionsCount(search = '') {
+  async getTransactionsCount(search = '', startDate = '', endDate = '') {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
@@ -44,13 +52,21 @@ export const db = {
       query = query.or(`description.ilike.%${search}%,category.ilike.%${search}%`)
     }
 
+    // Add date range filtering
+    if (startDate) {
+      query = query.gte('posted_at', startDate)
+    }
+    if (endDate) {
+      query = query.lte('posted_at', endDate + 'T23:59:59.999Z')
+    }
+
     const { count, error } = await query
     
     if (error) throw error
     return count || 0
   },
 
-  async getUncategorizedTransactions(search = '') {
+  async getUncategorizedTransactions(search = '', startDate = '', endDate = '') {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
@@ -66,6 +82,14 @@ export const db = {
     // Add search functionality
     if (search) {
       query = query.ilike('description', `%${search}%`)
+    }
+
+    // Add date range filtering
+    if (startDate) {
+      query = query.gte('posted_at', startDate)
+    }
+    if (endDate) {
+      query = query.lte('posted_at', endDate + 'T23:59:59.999Z')
     }
 
     const { data, error } = await query

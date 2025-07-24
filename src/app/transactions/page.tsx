@@ -9,7 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 import { db } from "@/lib/supabase"
 import { Transaction, Category } from "@/types/database"
 import { QuickRuleDialog } from "@/components/transactions/quick-rule-dialog"
-import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { Plus, Search, ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -19,9 +19,21 @@ export default function TransactionsPage() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [showRuleDialog, setShowRuleDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [itemsPerPage] = useState(25)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+
+  // Debounce search term
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+      setCurrentPage(1) // Reset to first page when searching
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm])
 
   const loadData = useCallback(async () => {
     try {
@@ -30,12 +42,12 @@ export default function TransactionsPage() {
       
       const [transactionsData, categoriesData, count] = await Promise.all([
         filter === 'uncategorized' 
-          ? db.getUncategorizedTransactions(searchTerm)
-          : db.getTransactions(itemsPerPage, offset, searchTerm),
+          ? db.getUncategorizedTransactions(debouncedSearchTerm, startDate, endDate)
+          : db.getTransactions(itemsPerPage, offset, debouncedSearchTerm, startDate, endDate),
         db.getCategories(),
         filter === 'uncategorized' 
           ? Promise.resolve(0) // We don't paginate uncategorized, so no count needed
-          : db.getTransactionsCount(searchTerm)
+          : db.getTransactionsCount(debouncedSearchTerm, startDate, endDate)
       ])
       
       setTransactions(transactionsData)
@@ -46,17 +58,14 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, itemsPerPage, searchTerm, filter])
+  }, [currentPage, itemsPerPage, debouncedSearchTerm, filter, startDate, endDate])
 
-  // Debounced search effect
+  // Load data when debounced search term, filter, or dates change
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setCurrentPage(1) // Reset to first page when searching
-      loadData()
-    }, 300)
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, filter, loadData])
+    loadData()
+  }, [debouncedSearchTerm, filter, startDate, endDate, loadData])
 
+  // Load data when page changes
   useEffect(() => {
     loadData()
   }, [currentPage, loadData])
@@ -139,9 +148,9 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
+      {/* Search and Filter Bar */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
           <Input
             type="text"
@@ -150,6 +159,44 @@ export default function TransactionsPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           />
+        </div>
+        
+        {/* Date Range Filters */}
+        <div className="flex gap-2 items-center">
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="pl-10 w-40 border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              placeholder="Start date"
+            />
+          </div>
+          <span className="text-slate-500 text-sm">to</span>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="pl-10 w-40 border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              placeholder="End date"
+            />
+          </div>
+          {(startDate || endDate) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setStartDate('')
+                setEndDate('')
+              }}
+              className="text-slate-600 border-slate-300 hover:bg-slate-100"
+            >
+              Clear
+            </Button>
+          )}
         </div>
       </div>
 
