@@ -8,28 +8,53 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Helper functions for database operations
 export const db = {
   // Transactions
-  async getTransactions(limit = 50, offset = 0) {
+  async getTransactions(limit = 50, offset = 0, search = '') {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('transactions')
       .select(`
         *,
         account:accounts(*)
       `)
       .order('posted_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+
+    // Add search functionality
+    if (search) {
+      query = query.or(`description.ilike.%${search}%,category.ilike.%${search}%`)
+    }
+
+    const { data, error } = await query.range(offset, offset + limit - 1)
     
     if (error) throw error
     return data || []
   },
 
-  async getUncategorizedTransactions() {
+  async getTransactionsCount(search = '') {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    const { data, error } = await supabase
+    let query = supabase
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+
+    // Add search functionality
+    if (search) {
+      query = query.or(`description.ilike.%${search}%,category.ilike.%${search}%`)
+    }
+
+    const { count, error } = await query
+    
+    if (error) throw error
+    return count || 0
+  },
+
+  async getUncategorizedTransactions(search = '') {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    let query = supabase
       .from('transactions')
       .select(`
         *,
@@ -37,6 +62,13 @@ export const db = {
       `)
       .is('category', null)
       .order('posted_at', { ascending: false })
+
+    // Add search functionality
+    if (search) {
+      query = query.ilike('description', `%${search}%`)
+    }
+
+    const { data, error } = await query
     
     if (error) throw error
     return data || []

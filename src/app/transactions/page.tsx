@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { db } from "@/lib/supabase"
 import { Transaction, Category } from "@/types/database"
 import { QuickRuleDialog } from "@/components/transactions/quick-rule-dialog"
-import { Plus, Zap } from "lucide-react"
+import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -17,27 +18,48 @@ export default function TransactionsPage() {
   const [filter, setFilter] = useState<'all' | 'uncategorized'>('all')
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [showRuleDialog, setShowRuleDialog] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [itemsPerPage] = useState(25)
 
-  useEffect(() => {
-    loadData()
-  }, [filter])
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
-      const [transactionsData, categoriesData] = await Promise.all([
-        filter === 'uncategorized' ? db.getUncategorizedTransactions() : db.getTransactions(),
-        db.getCategories()
+      const offset = (currentPage - 1) * itemsPerPage
+      
+      const [transactionsData, categoriesData, count] = await Promise.all([
+        filter === 'uncategorized' 
+          ? db.getUncategorizedTransactions(searchTerm)
+          : db.getTransactions(itemsPerPage, offset, searchTerm),
+        db.getCategories(),
+        filter === 'uncategorized' 
+          ? Promise.resolve(0) // We don't paginate uncategorized, so no count needed
+          : db.getTransactionsCount(searchTerm)
       ])
       
       setTransactions(transactionsData)
       setCategories(categoriesData)
+      setTotalCount(count)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, itemsPerPage, searchTerm, filter])
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setCurrentPage(1) // Reset to first page when searching
+      loadData()
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, filter, loadData])
+
+  useEffect(() => {
+    loadData()
+  }, [currentPage, loadData])
 
   async function updateTransactionCategory(transactionId: string, categoryName: string) {
     try {
@@ -78,6 +100,9 @@ export default function TransactionsPage() {
     )
   }
 
+  const totalPages = Math.ceil(totalCount / itemsPerPage)
+  const showPagination = filter === 'all' && totalPages > 1
+
   return (
     <div className="p-6 bg-slate-50 min-h-full">
       <div className="mb-6 flex items-center justify-between">
@@ -95,7 +120,7 @@ export default function TransactionsPage() {
             All Transactions
             {filter === 'all' && (
               <Badge variant="secondary" className="ml-2 bg-white text-slate-600">
-                {transactions.length}
+                {totalCount || transactions.length}
               </Badge>
             )}
           </Button>
@@ -111,6 +136,20 @@ export default function TransactionsPage() {
               </Badge>
             )}
           </Button>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Search transactions or categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
         </div>
       </div>
 
@@ -244,6 +283,42 @@ export default function TransactionsPage() {
             )}
           </div>
         </CardContent>
+
+        {/* Pagination Controls */}
+        {showPagination && (
+          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/50">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-slate-600">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} transactions
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage <= 1}
+                  className="border-slate-300 text-slate-600 hover:bg-slate-100"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                <span className="text-sm text-slate-600 px-3 py-1">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="border-slate-300 text-slate-600 hover:bg-slate-100"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {selectedTransaction && (
