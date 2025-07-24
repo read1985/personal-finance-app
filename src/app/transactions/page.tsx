@@ -125,83 +125,90 @@ export default function TransactionsPage() {
             </p>
           )}
         </CardHeader>
-        <CardContent className="p-3">
-          <div className="space-y-3">
+        <CardContent className="p-4">
+          <div className="grid gap-4 lg:grid-cols-2">
             {transactions.map((transaction) => (
-              <div
+              <Card
                 key={transaction.id}
-                className={`p-4 border rounded-xl hover:shadow-sm transition-all duration-200 ${
+                className={`p-0 transition-all duration-200 hover:shadow-md ${
                   !transaction.category 
-                    ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50' 
-                    : 'border-slate-200 bg-white hover:bg-slate-50'
+                    ? 'border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm' 
+                    : 'border-slate-200 bg-white hover:border-slate-300'
                 }`}
               >
-                <div className="mb-3">
-                  <div className="flex items-start gap-3 mb-2">
-                    <h3 className="font-medium text-slate-800 flex-1">
-                      {transaction.description}
-                    </h3>
-                    <p className={`font-semibold text-lg ${
-                      transaction.amount_cents < 0 
-                        ? 'text-red-500' 
-                        : 'text-emerald-600'
-                    }`}>
-                      {formatCurrency(transaction.amount_cents)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <span>{transaction.account?.name}</span>
-                    <span>•</span>
-                    <span>{formatDate(transaction.posted_at)}</span>
-                    {transaction.confidence && (
-                      <>
+                <CardContent className="p-4">
+                  {/* Transaction Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-800 mb-1 line-clamp-2">
+                        {transaction.description}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-slate-500">
+                        <span className="font-medium">{transaction.account?.name}</span>
                         <span>•</span>
-                        <span className="text-slate-400">
+                        <span>{formatDate(transaction.posted_at)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right ml-3">
+                      <p className={`text-xl font-bold ${
+                        transaction.amount_cents < 0 
+                          ? 'text-red-500' 
+                          : 'text-emerald-600'
+                      }`}>
+                        {formatCurrency(transaction.amount_cents)}
+                      </p>
+                      {transaction.confidence && (
+                        <span className="text-xs text-slate-400">
                           {Math.round(parseFloat(transaction.confidence) * 100)}% confident
                         </span>
-                      </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category Status */}
+                  <div className="mb-3">
+                    {transaction.category ? (
+                      <Badge 
+                        className={`${getCategoryColor(transaction.category)} border-none text-white`}
+                        variant="secondary"
+                      >
+                        {transaction.category}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-amber-400 text-amber-800 bg-amber-100">
+                        ⚠️ Needs Categorization
+                      </Badge>
                     )}
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3 flex-wrap">
-                  {transaction.category ? (
-                    <Badge 
-                      className={`${getCategoryColor(transaction.category)} border-none`}
-                      variant="secondary"
+                  {/* Actions */}
+                  <div className="flex gap-2 flex-wrap">
+                    <select
+                      className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-colors"
+                      value={transaction.category || ''}
+                      onChange={(e) => updateTransactionCategory(transaction.id, e.target.value)}
                     >
-                      {transaction.category}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
-                      Uncategorized
-                    </Badge>
-                  )}
-                  
-                  <select
-                    className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm min-w-40 bg-white text-slate-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-colors"
-                    value={transaction.category || ''}
-                    onChange={(e) => updateTransactionCategory(transaction.id, e.target.value)}
-                  >
-                    <option value="">Select category...</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.name}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                      <option value="">Select category...</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.name}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openRuleDialog(transaction)}
-                    className="text-xs border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-700"
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add Rule
-                  </Button>
-                </div>
-              </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openRuleDialog(transaction)}
+                      className="px-3 py-2 border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-700 whitespace-nowrap"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Rule
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
             
             {transactions.length === 0 && (
