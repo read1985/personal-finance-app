@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,35 +19,37 @@ export default function TransactionsPage() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [showRuleDialog, setShowRuleDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [itemsPerPage] = useState(25)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  
+  // Use refs to track current values without causing re-renders
+  const searchRef = useRef('')
+  const filterRef = useRef(filter)
+  const startDateRef = useRef('')
+  const endDateRef = useRef('')
 
-  // Debounce search term
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-      setCurrentPage(1) // Reset to first page when searching
-    }, 300)
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm])
+  // Update refs when values change
+  useEffect(() => { filterRef.current = filter }, [filter])
+  useEffect(() => { startDateRef.current = startDate }, [startDate])
+  useEffect(() => { endDateRef.current = endDate }, [endDate])
 
-  const loadData = useCallback(async () => {
+  // Stable load data function
+  const loadData = useCallback(async (page = 1, search = '', filterType = 'all', start = '', end = '') => {
     try {
       setLoading(true)
-      const offset = (currentPage - 1) * itemsPerPage
+      const offset = (page - 1) * itemsPerPage
       
       const [transactionsData, categoriesData, count] = await Promise.all([
-        filter === 'uncategorized' 
-          ? db.getUncategorizedTransactions(debouncedSearchTerm, startDate, endDate)
-          : db.getTransactions(itemsPerPage, offset, debouncedSearchTerm, startDate, endDate),
+        filterType === 'uncategorized' 
+          ? db.getUncategorizedTransactions(search, start, end)
+          : db.getTransactions(itemsPerPage, offset, search, start, end),
         db.getCategories(),
-        filter === 'uncategorized' 
-          ? Promise.resolve(0) // We don't paginate uncategorized, so no count needed
-          : db.getTransactionsCount(debouncedSearchTerm, startDate, endDate)
+        filterType === 'uncategorized' 
+          ? Promise.resolve(0)
+          : db.getTransactionsCount(search, start, end)
       ])
       
       setTransactions(transactionsData)
@@ -58,16 +60,33 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, itemsPerPage, debouncedSearchTerm, filter, startDate, endDate])
+  }, [itemsPerPage])
 
-  // Load data when debounced search term, filter, or dates change
+  // Debounced search effect
   useEffect(() => {
-    loadData()
-  }, [debouncedSearchTerm, filter, startDate, endDate, loadData])
+    const timeoutId = setTimeout(() => {
+      searchRef.current = searchTerm
+      setCurrentPage(1)
+      loadData(1, searchTerm, filterRef.current, startDateRef.current, endDateRef.current)
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, loadData])
 
-  // Load data when page changes
+  // Effect for filter changes
   useEffect(() => {
-    loadData()
+    setCurrentPage(1)
+    loadData(1, searchRef.current, filter, startDateRef.current, endDateRef.current)
+  }, [filter, loadData])
+
+  // Effect for date changes
+  useEffect(() => {
+    setCurrentPage(1)
+    loadData(1, searchRef.current, filterRef.current, startDate, endDate)
+  }, [startDate, endDate, loadData])
+
+  // Effect for page changes
+  useEffect(() => {
+    loadData(currentPage, searchRef.current, filterRef.current, startDateRef.current, endDateRef.current)
   }, [currentPage, loadData])
 
   async function updateTransactionCategory(transactionId: string, categoryName: string) {
