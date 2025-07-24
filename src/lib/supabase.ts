@@ -9,6 +9,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export const db = {
   // Transactions
   async getTransactions(limit = 50, offset = 0) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('transactions')
       .select(`
@@ -19,10 +22,13 @@ export const db = {
       .range(offset, offset + limit - 1)
     
     if (error) throw error
-    return data
+    return data || []
   },
 
   async getUncategorizedTransactions() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('transactions')
       .select(`
@@ -33,7 +39,7 @@ export const db = {
       .order('posted_at', { ascending: false })
     
     if (error) throw error
-    return data
+    return data || []
   },
 
   async updateTransactionCategory(id: string, category: string) {
@@ -53,19 +59,25 @@ export const db = {
 
   // Categories
   async getCategories() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('categories')
       .select('*')
       .order('name')
     
     if (error) throw error
-    return data
+    return data || []
   },
 
   async createCategory(name: string, color: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('categories')
-      .insert({ name, color })
+      .insert({ name, color, user_id: user.id })
       .select()
     
     if (error) throw error
@@ -94,19 +106,25 @@ export const db = {
 
   // Rules
   async getRules() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('rules')
       .select('*')
       .order('created_at', { ascending: false })
     
     if (error) throw error
-    return data
+    return data || []
   },
 
   async createRule(matcher: string, category: string, confidence: number = 50) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('rules')
-      .insert({ matcher, category, confidence })
+      .insert({ matcher, category, confidence, user_id: user.id })
       .select()
     
     if (error) throw error
@@ -135,17 +153,23 @@ export const db = {
 
   // Accounts
   async getAccounts() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('accounts')
       .select('*')
       .order('name')
     
     if (error) throw error
-    return data
+    return data || []
   },
 
   // Analytics
   async getSpendingByCategory(startDate: string, endDate: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('transactions')
       .select(`
@@ -158,10 +182,13 @@ export const db = {
       .lt('amount_cents', 0) // Only expenses
     
     if (error) throw error
-    return data
+    return data || []
   },
 
   async getMonthlySpending(months: number = 6) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const endDate = new Date()
     const startDate = new Date()
     startDate.setMonth(startDate.getMonth() - months)
@@ -179,6 +206,6 @@ export const db = {
       .order('posted_at')
     
     if (error) throw error
-    return data
+    return data || []
   }
 }

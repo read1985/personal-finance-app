@@ -3,13 +3,16 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/components/auth/auth-provider"
+import { Button } from "@/components/ui/button"
 import { 
   LayoutDashboard, 
   Receipt, 
   Tags, 
   Settings,
   CreditCard,
-  BarChart3
+  BarChart3,
+  LogOut
 } from "lucide-react"
 
 const navigation = [
@@ -47,6 +50,7 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { user, signOut } = useAuth()
 
   return (
     <div className="flex h-full w-64 flex-col bg-gray-50 border-r">
@@ -79,6 +83,23 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      <div className="px-3 pb-4 border-t pt-4">
+        <div className="mb-3 px-3">
+          <p className="text-xs text-gray-500">Signed in as</p>
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {user?.email}
+          </p>
+        </div>
+        <Button
+          onClick={signOut}
+          variant="ghost"
+          className="w-full justify-start text-gray-700 hover:bg-gray-100"
+        >
+          <LogOut className="mr-3 h-5 w-5" />
+          Sign Out
+        </Button>
+      </div>
     </div>
   )
 }
