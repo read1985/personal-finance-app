@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,17 +22,26 @@ export function QuickRuleDialog({
   onOpenChange,
   onRuleCreated 
 }: QuickRuleDialogProps) {
-  const [ruleText, setRuleText] = useState(() => {
-    // Extract merchant name from transaction description
-    const desc = transaction.description.trim()
-    // Try to find the main merchant name (usually the first part before special characters)
-    const merchantMatch = desc.match(/^([A-Za-z0-9\s&'-]+)/)
-    return merchantMatch ? merchantMatch[1].trim() : desc
-  })
+  const [ruleText, setRuleText] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("")
   const [confidence, setConfidence] = useState(80) // Display as percentage
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Update ruleText when transaction changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      // Extract merchant name from transaction description
+      const desc = transaction.description.trim()
+      // Try to find the main merchant name (usually the first part before special characters)
+      const merchantMatch = desc.match(/^([A-Za-z0-9\s&'-]+)/)
+      setRuleText(merchantMatch ? merchantMatch[1].trim() : desc)
+      // Reset other form fields
+      setSelectedCategory("")
+      setConfidence(80)
+      setError(null)
+    }
+  }, [transaction, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
