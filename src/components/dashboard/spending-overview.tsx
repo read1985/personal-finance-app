@@ -83,16 +83,16 @@ export function SpendingOverview() {
     }
   }
 
-  const chartColors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#ff0000', '#00ff00', '#0000ff']
+  const chartColors = ['#64748b', '#0f766e', '#d97706', '#dc2626', '#7c3aed', '#059669', '#2563eb']
 
   if (loading) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
+        <Card className="border-slate-200 shadow-sm bg-white">
           <CardContent className="p-6">
             <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-slate-200 rounded w-1/2 mb-2"></div>
+              <div className="h-8 bg-slate-200 rounded w-3/4"></div>
             </div>
           </CardContent>
         </Card>
@@ -104,41 +104,41 @@ export function SpendingOverview() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="border-slate-200 shadow-sm bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Spent This Month</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700">Total Spent This Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalSpent)}</div>
+            <div className="text-2xl font-bold text-slate-800">{formatCurrency(totalSpent)}</div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-slate-200 shadow-sm bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Categories</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700">Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{spendingData.length}</div>
+            <div className="text-2xl font-bold text-slate-800">{spendingData.length}</div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-slate-200 shadow-sm bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Category</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700">Top Category</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-slate-800">
               {spendingData.length > 0 ? spendingData[0].category : 'N/A'}
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-slate-200 shadow-sm bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Daily Spending</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700">Avg Daily Spending</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-slate-800">
               {formatCurrency(totalSpent / 30)}
             </div>
           </CardContent>
@@ -147,9 +147,9 @@ export function SpendingOverview() {
 
       {/* Charts */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="border-slate-200 shadow-sm bg-white">
           <CardHeader>
-            <CardTitle>Spending by Category</CardTitle>
+            <CardTitle className="text-slate-800">Spending by Category</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -163,7 +163,7 @@ export function SpendingOverview() {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="#64748b"
                     dataKey="value"
                     label={({ category, value }) => `${category}: ${formatCurrency((value || 0) * 100)}`}
                   >
@@ -178,19 +178,19 @@ export function SpendingOverview() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm bg-white">
           <CardHeader>
-            <CardTitle>Monthly Spending Trend</CardTitle>
+            <CardTitle className="text-slate-800">Monthly Spending Trend</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="month" tick={{ fill: '#64748b' }} />
+                  <YAxis tick={{ fill: '#64748b' }} />
                   <Tooltip formatter={(value) => formatCurrency((Number(value) || 0) * 100)} />
-                  <Bar dataKey="amount" fill="#8884d8" />
+                  <Bar dataKey="amount" fill="#64748b" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

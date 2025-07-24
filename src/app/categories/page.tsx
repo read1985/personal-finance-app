@@ -9,16 +9,16 @@ import { Category } from "@/types/database"
 import { Plus, Edit, Trash2 } from "lucide-react"
 
 const TAILWIND_COLORS = [
-  'bg-red-500',
-  'bg-orange-500',
-  'bg-yellow-500',
-  'bg-green-500',
-  'bg-blue-500',
+  'bg-slate-500',
+  'bg-emerald-500',
+  'bg-teal-500',
+  'bg-sky-500',
+  'bg-violet-500',
+  'bg-rose-500',
+  'bg-amber-500',
+  'bg-lime-500',
   'bg-indigo-500',
-  'bg-purple-500',
   'bg-pink-500',
-  'bg-gray-500',
-  'bg-cyan-500',
 ]
 
 interface CategoryForm {
@@ -31,7 +31,7 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [form, setForm] = useState<CategoryForm>({ name: '', color: 'bg-gray-500' })
+  const [form, setForm] = useState<CategoryForm>({ name: '', color: 'bg-slate-500' })
 
   useEffect(() => {
     loadCategories()
@@ -61,7 +61,7 @@ export default function CategoriesPage() {
       await loadCategories()
       setShowForm(false)
       setEditingCategory(null)
-      setForm({ name: '', color: 'bg-gray-500' })
+      setForm({ name: '', color: 'bg-slate-500' })
     } catch (error) {
       console.error('Error saving category:', error)
     }
@@ -87,17 +87,17 @@ export default function CategoriesPage() {
   function cancelEdit() {
     setShowForm(false)
     setEditingCategory(null)
-    setForm({ name: '', color: 'bg-gray-500' })
+    setForm({ name: '', color: 'bg-slate-500' })
   }
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-6 bg-slate-50 min-h-full">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-slate-200 rounded w-1/4"></div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-slate-200 rounded"></div>
             ))}
           </div>
         </div>
@@ -106,43 +106,46 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-slate-50 min-h-full">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
-          <p className="text-gray-600">Manage your transaction categories</p>
+          <h1 className="text-3xl font-bold text-slate-800">Categories</h1>
+          <p className="text-slate-600">Manage your transaction categories</p>
         </div>
         
-        <Button onClick={() => setShowForm(true)}>
+        <Button 
+          onClick={() => setShowForm(true)}
+          className="bg-slate-700 hover:bg-slate-800 text-white"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Category
         </Button>
       </div>
 
       {showForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>
+        <Card className="mb-6 border-slate-200 shadow-sm bg-white">
+          <CardHeader className="bg-slate-50/50">
+            <CardTitle className="text-slate-800">
               {editingCategory ? 'Edit Category' : 'New Category'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Name
                 </label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-colors"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Color
                 </label>
                 <div className="grid grid-cols-5 gap-2">
@@ -151,22 +154,30 @@ export default function CategoriesPage() {
                       key={color}
                       type="button"
                       onClick={() => setForm({ ...form, color })}
-                      className={`w-8 h-8 rounded-full ${color} ${
-                        form.color === color ? 'ring-2 ring-gray-400' : ''
+                      className={`w-8 h-8 rounded-full ${color} transition-all ${
+                        form.color === color ? 'ring-2 ring-slate-400 scale-110' : 'hover:scale-105'
                       }`}
                     />
                   ))}
                 </div>
                 <div className="mt-2">
-                  <Badge className={form.color}>Preview: {form.name || 'Category'}</Badge>
+                  <Badge className={`${form.color} border-none text-white`}>Preview: {form.name || 'Category'}</Badge>
                 </div>
               </div>
               
               <div className="flex gap-2">
-                <Button type="submit">
+                <Button 
+                  type="submit"
+                  className="bg-slate-700 hover:bg-slate-800 text-white"
+                >
                   {editingCategory ? 'Update' : 'Create'}
                 </Button>
-                <Button type="button" variant="outline" onClick={cancelEdit}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={cancelEdit}
+                  className="border-slate-300 text-slate-600 hover:bg-slate-100"
+                >
                   Cancel
                 </Button>
               </div>
@@ -177,12 +188,12 @@ export default function CategoriesPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {categories.map((category) => (
-          <Card key={category.id}>
+          <Card key={category.id} className="border-slate-200 shadow-sm bg-white hover:shadow-md transition-shadow">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-4 h-4 rounded-full ${category.color}`} />
-                  <span className="font-medium">{category.name}</span>
+                  <span className="font-medium text-slate-800">{category.name}</span>
                 </div>
                 
                 <div className="flex gap-1">
@@ -190,6 +201,7 @@ export default function CategoriesPage() {
                     size="sm"
                     variant="ghost"
                     onClick={() => startEdit(category)}
+                    className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -197,6 +209,7 @@ export default function CategoriesPage() {
                     size="sm"
                     variant="ghost"
                     onClick={() => handleDelete(category.id)}
+                    className="text-slate-500 hover:text-red-600 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -207,8 +220,14 @@ export default function CategoriesPage() {
         ))}
         
         {categories.length === 0 && (
-          <div className="col-span-full text-center py-8 text-gray-500">
-            No categories found. Create your first category to get started.
+          <div className="col-span-full text-center py-12 text-slate-500">
+            <div className="text-4xl mb-3">📂</div>
+            <p className="text-lg font-medium text-slate-600 mb-1">
+              No categories found
+            </p>
+            <p className="text-sm text-slate-500">
+              Create your first category to get started organizing your transactions.
+            </p>
           </div>
         )}
       </div>

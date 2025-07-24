@@ -136,27 +136,11 @@ export default function TransactionsPage() {
                     : 'border-slate-200 bg-white hover:bg-slate-50'
                 }`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-slate-800 truncate">
+                <div className="mb-3">
+                  <div className="flex items-start gap-3 mb-2">
+                    <h3 className="font-medium text-slate-800 flex-1">
                       {transaction.description}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
-                      <span>{transaction.account?.name}</span>
-                      <span>•</span>
-                      <span>{formatDate(transaction.posted_at)}</span>
-                      {transaction.confidence && (
-                        <>
-                          <span>•</span>
-                          <span className="text-slate-400">
-                            {Math.round(parseFloat(transaction.confidence) * 100)}% confident
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="text-right ml-4">
                     <p className={`font-semibold text-lg ${
                       transaction.amount_cents < 0 
                         ? 'text-red-500' 
@@ -164,6 +148,19 @@ export default function TransactionsPage() {
                     }`}>
                       {formatCurrency(transaction.amount_cents)}
                     </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <span>{transaction.account?.name}</span>
+                    <span>•</span>
+                    <span>{formatDate(transaction.posted_at)}</span>
+                    {transaction.confidence && (
+                      <>
+                        <span>•</span>
+                        <span className="text-slate-400">
+                          {Math.round(parseFloat(transaction.confidence) * 100)}% confident
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
 
