@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +14,8 @@ import { Plus, Search, ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isSearching, setIsSearching] = useState(false)
   const [filter, setFilter] = useState<'all' | 'uncategorized'>('all')
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [showRuleDialog, setShowRuleDialog] = useState(false)
@@ -24,75 +25,69 @@ export default function TransactionsPage() {
   const [itemsPerPage] = useState(25)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  
-  // Use refs to track current values without causing re-renders
-  const searchRef = useRef('')
-  const filterRef = useRef(filter)
-  const startDateRef = useRef('')
-  const endDateRef = useRef('')
 
-  // Update refs when values change
-  useEffect(() => { filterRef.current = filter }, [filter])
-  useEffect(() => { startDateRef.current = startDate }, [startDate])
-  useEffect(() => { endDateRef.current = endDate }, [endDate])
-
-  // Stable load data function
-  const loadData = useCallback(async (page = 1, search = '', filterType = 'all', start = '', end = '') => {
+  // Single stable function to fetch data
+  const fetchData = async (page: number, search: string, filterType: 'all' | 'uncategorized', start: string, end: string, showSearching = false) => {
     try {
-      setLoading(true)
-      const offset = (page - 1) * itemsPerPage
+      if (showSearching) setIsSearching(true)
       
+      const offset = (page - 1) * itemsPerPage
       const [transactionsData, categoriesData, count] = await Promise.all([
         filterType === 'uncategorized' 
           ? db.getUncategorizedTransactions(search, start, end)
           : db.getTransactions(itemsPerPage, offset, search, start, end),
-        db.getCategories(),
+        categories.length > 0 ? Promise.resolve(categories) : db.getCategories(),
         filterType === 'uncategorized' 
           ? Promise.resolve(0)
           : db.getTransactionsCount(search, start, end)
       ])
       
       setTransactions(transactionsData)
-      setCategories(categoriesData)
+      if (categories.length === 0) setCategories(categoriesData)
       setTotalCount(count)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
+      setIsSearching(false)
     }
-  }, [itemsPerPage])
+  }
 
-  // Debounced search effect
+  // Initial load
+  useEffect(() => {
+    fetchData(1, '', 'all', '', '', false)
+  }, [])
+
+  // Debounced search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      searchRef.current = searchTerm
-      setCurrentPage(1)
-      loadData(1, searchTerm, filterRef.current, startDateRef.current, endDateRef.current)
+      if (currentPage !== 1) setCurrentPage(1)
+      fetchData(1, searchTerm, filter, startDate, endDate, true)
     }, 300)
     return () => clearTimeout(timeoutId)
-  }, [searchTerm, loadData])
+  }, [searchTerm])
 
-  // Effect for filter changes
+  // Filter changes
   useEffect(() => {
-    setCurrentPage(1)
-    loadData(1, searchRef.current, filter, startDateRef.current, endDateRef.current)
-  }, [filter, loadData])
+    if (currentPage !== 1) setCurrentPage(1)
+    fetchData(1, searchTerm, filter, startDate, endDate, false)
+  }, [filter])
 
-  // Effect for date changes
+  // Date changes
   useEffect(() => {
-    setCurrentPage(1)
-    loadData(1, searchRef.current, filterRef.current, startDate, endDate)
-  }, [startDate, endDate, loadData])
+    if (currentPage !== 1) setCurrentPage(1)
+    fetchData(1, searchTerm, filter, startDate, endDate, true)
+  }, [startDate, endDate])
 
-  // Effect for page changes
+  // Page changes
   useEffect(() => {
-    loadData(currentPage, searchRef.current, filterRef.current, startDateRef.current, endDateRef.current)
-  }, [currentPage, loadData])
+    fetchData(currentPage, searchTerm, filter, startDate, endDate, false)
+  }, [currentPage])
 
   async function updateTransactionCategory(transactionId: string, categoryName: string) {
     try {
       await db.updateTransactionCategory(transactionId, categoryName)
-      await loadData() // Refresh data
+      await fetchData(currentPage, searchTerm, filter, startDate, endDate, false) // Refresh data
     } catch (error) {
       console.error('Error updating category:', error)
     }
@@ -110,10 +105,10 @@ export default function TransactionsPage() {
   }
 
   function handleRuleCreated() {
-    loadData() // Refresh the transactions
+    fetchData(currentPage, searchTerm, filter, startDate, endDate, false) // Refresh the transactions
   }
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
@@ -170,14 +165,19 @@ export default function TransactionsPage() {
       {/* Search and Filter Bar */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isSearching ? 'text-blue-500 animate-pulse' : 'text-slate-400'}`} />
           <Input
             type="text"
             placeholder="Search transactions or categories..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className={`pl-10 border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 ${isSearching ? 'border-blue-300' : ''}`}
           />
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
         </div>
         
         {/* Date Range Filters */}
