@@ -8,7 +8,7 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 import { db } from "@/lib/supabase"
 import { Transaction, Category } from "@/types/database"
 import { QuickRuleDialog } from "@/components/transactions/quick-rule-dialog"
-import { Plus, Zap } from "lucide-react"
+import { Plus } from "lucide-react"
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -20,7 +20,7 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     loadData()
-  }, [filter])
+  }, [filter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadData() {
     try {
@@ -184,7 +184,7 @@ export default function TransactionsPage() {
                       className={`${getCategoryColor(transaction.category)} border-none text-white text-xs px-2 py-1 cursor-pointer hover:opacity-80 w-full justify-center truncate`}
                       onClick={() => {
                         // TODO: Implement category popover
-                        const newCategory = prompt('Select new category:', transaction.category)
+                        const newCategory = prompt('Select new category:', transaction.category || '')
                         if (newCategory && newCategory !== transaction.category) {
                           updateTransactionCategory(transaction.id, newCategory)
                         }
