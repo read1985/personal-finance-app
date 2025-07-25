@@ -111,8 +111,8 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white shadow-xl">
+        <div className="p-6 bg-white">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-slate-900">
               {budget ? 'Edit Budget' : 'Create Budget'}
@@ -152,7 +152,7 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
                 name="category_id"
                 value={formData.category_id}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none bg-white text-slate-900"
               >
                 <option value="">Select a category</option>
                 {categories.map(category => (
@@ -220,7 +220,7 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
                   name="recurrence_type"
                   value={formData.recurrence_type}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none bg-white text-slate-900"
                 >
                   <option value="daily">Day(s)</option>
                   <option value="weekly">Week(s)</option>
@@ -255,7 +255,7 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
                   name="is_active"
                   checked={formData.is_active}
                   onChange={handleInputChange}
-                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 bg-white"
                 />
                 <label className="text-sm font-medium text-slate-700">
                   Budget is active
