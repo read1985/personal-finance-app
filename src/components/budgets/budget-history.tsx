@@ -65,8 +65,15 @@ export default function BudgetHistory({ budget }: BudgetHistoryProps) {
     )
   }
 
-  // Prepare chart data
-  const chartData = analytics.historical_periods.slice(-12).map((period) => ({
+  // Filter to only include periods that have ended (past periods) or have spending data
+  const today = new Date()
+  const relevantPeriods = analytics.historical_periods.filter(period => {
+    const periodEnd = new Date(period.period_end)
+    return periodEnd <= today || period.spent_amount_cents > 0
+  })
+
+  // Prepare chart data from relevant periods
+  const chartData = relevantPeriods.slice(-12).map((period) => ({
     period: `${new Date(period.period_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(period.period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
     budgeted: period.budgeted_amount_cents / 100,
     spent: period.spent_amount_cents / 100,
@@ -75,13 +82,13 @@ export default function BudgetHistory({ budget }: BudgetHistoryProps) {
     variance: (period.spent_amount_cents - period.budgeted_amount_cents) / 100
   }))
 
-  // Calculate summary stats
-  const totalPeriods = analytics.historical_periods.length
-  const overBudgetPeriods = analytics.historical_periods.filter(p => p.percentage_used > 100).length
+  // Calculate summary stats from relevant periods only
+  const totalPeriods = relevantPeriods.length
+  const overBudgetPeriods = relevantPeriods.filter(p => p.percentage_used > 100).length
   const averageUsage = totalPeriods > 0 
-    ? analytics.historical_periods.reduce((sum, p) => sum + p.percentage_used, 0) / totalPeriods
+    ? relevantPeriods.reduce((sum, p) => sum + p.percentage_used, 0) / totalPeriods
     : 0
-  const totalVariance = analytics.historical_periods.reduce((sum, p) => 
+  const totalVariance = relevantPeriods.reduce((sum, p) => 
     sum + ((p.spent_amount_cents - p.budgeted_amount_cents) / 100), 0)
 
   return (
@@ -239,7 +246,7 @@ export default function BudgetHistory({ budget }: BudgetHistoryProps) {
                 </tr>
               </thead>
               <tbody>
-                {analytics.historical_periods.slice(-20).reverse().map((period, index) => {
+                {relevantPeriods.slice(-20).reverse().map((period, index) => {
                   const isOverBudget = period.percentage_used > 100
                   const variance = (period.spent_amount_cents - period.budgeted_amount_cents) / 100
                   
