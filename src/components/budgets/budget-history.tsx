@@ -78,7 +78,9 @@ export default function BudgetHistory({ budget }: BudgetHistoryProps) {
   // Calculate summary stats
   const totalPeriods = analytics.historical_periods.length
   const overBudgetPeriods = analytics.historical_periods.filter(p => p.percentage_used > 100).length
-  const averageUsage = analytics.historical_periods.reduce((sum, p) => sum + p.percentage_used, 0) / totalPeriods
+  const averageUsage = totalPeriods > 0 
+    ? analytics.historical_periods.reduce((sum, p) => sum + p.percentage_used, 0) / totalPeriods
+    : 0
   const totalVariance = analytics.historical_periods.reduce((sum, p) => 
     sum + ((p.spent_amount_cents - p.budgeted_amount_cents) / 100), 0)
 

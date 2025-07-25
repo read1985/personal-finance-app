@@ -515,6 +515,9 @@ export const db = {
     const budget = await this.getBudget(budgetId)
     if (!budget) throw new Error('Budget not found')
 
+    // Regenerate budget periods to ensure they're up to date
+    await this.generateBudgetPeriods(budgetId)
+
     // Get current period
     const currentPeriod = await this.getCurrentBudgetPeriod(budgetId)
     
@@ -545,15 +548,19 @@ export const db = {
     }
 
     // Process historical periods
-    const historicalAnalytics = historicalPeriods.map(period => ({
-      period_start: period.period_start,
-      period_end: period.period_end,
-      budgeted_amount_cents: period.budgeted_amount_cents,
-      spent_amount_cents: period.spent_amount_cents,
-      percentage_used: period.budgeted_amount_cents > 0 
-        ? Math.round((period.spent_amount_cents / period.budgeted_amount_cents) * 10000) / 100
+    const historicalAnalytics = historicalPeriods.map(period => {
+      const percentageUsed = period.budgeted_amount_cents > 0 
+        ? (period.spent_amount_cents / period.budgeted_amount_cents) * 100
         : 0
-    }))
+      
+      return {
+        period_start: period.period_start,
+        period_end: period.period_end,
+        budgeted_amount_cents: period.budgeted_amount_cents,
+        spent_amount_cents: period.spent_amount_cents,
+        percentage_used: Math.round(percentageUsed * 100) / 100
+      }
+    })
 
     return {
       budget_id: budget.id,
