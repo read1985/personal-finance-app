@@ -48,9 +48,14 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
         is_active: budget.is_active
       })
     } else {
-      // Set default start date to today
-      const today = new Date().toISOString().split('T')[0]
-      setFormData(prev => ({ ...prev, start_date: today }))
+      // Set default start date to today - ensure we get the correct date
+      const today = new Date()
+      const year = today.getFullYear()
+      const month = String(today.getMonth() + 1).padStart(2, '0')
+      const day = String(today.getDate()).padStart(2, '0')
+      const todayString = `${year}-${month}-${day}`
+      
+      setFormData(prev => ({ ...prev, start_date: todayString }))
     }
   }, [budget])
 
@@ -79,6 +84,9 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
       const selectedCategory = categories.find(cat => cat.id === formData.category_id)
       const budgetName = selectedCategory?.name || 'Unknown Category'
       
+      // Debug: Log the start date being submitted
+      console.log('Budget form submitting with start_date:', formData.start_date)
+      
       const submitData = {
         name: budgetName,
         category_id: formData.category_id,
@@ -90,6 +98,7 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
         is_active: formData.is_active
       }
 
+      console.log('Submit data:', submitData)
       await onSubmit(submitData)
     } catch (error) {
       console.error('Error saving budget:', error)
@@ -177,8 +186,13 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
                 type="date"
                 value={formData.start_date}
                 onChange={handleInputChange}
+                min="2024-01-01"
+                max="2030-12-31"
                 className="border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
+              <p className="text-xs text-slate-500 mt-1">
+                Current value: {formData.start_date}
+              </p>
             </div>
 
             {/* Recurrence */}
