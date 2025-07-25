@@ -66,3 +66,53 @@ export interface MonthlySpending {
   total: number
   categories: SpendingInsight[]
 }
+
+export interface Budget {
+  id: string
+  user_id: string
+  category_id: string
+  name: string
+  amount_cents: number
+  start_date: string
+  recurrence_type: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  recurrence_interval: number
+  end_date: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  category?: Category
+}
+
+export interface BudgetPeriod {
+  id: string
+  budget_id: string
+  period_start: string
+  period_end: string
+  budgeted_amount_cents: number
+  spent_amount_cents: number
+  created_at: string
+  updated_at: string
+  budget?: Budget
+}
+
+export interface BudgetAnalytics {
+  budget_id: string
+  budget_name: string
+  category_name: string
+  current_period: {
+    period_start: string
+    period_end: string
+    budgeted_amount_cents: number
+    spent_amount_cents: number
+    remaining_amount_cents: number
+    percentage_used: number
+    days_remaining: number
+  } | null
+  historical_periods: Array<{
+    period_start: string
+    period_end: string
+    budgeted_amount_cents: number
+    spent_amount_cents: number
+    percentage_used: number
+  }>
+}

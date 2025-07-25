@@ -9,6 +9,7 @@ import {
   LayoutDashboard, 
   Receipt, 
   Tags, 
+  Target,
   Settings,
   CreditCard,
   BarChart3,
@@ -30,6 +31,11 @@ const navigation = [
     name: "Categories",
     href: "/categories",
     icon: Tags,
+  },
+  {
+    name: "Budgets",
+    href: "/budgets",
+    icon: Target,
   },
   {
     name: "Rules",

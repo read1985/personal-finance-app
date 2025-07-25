@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils"
 import { db } from "@/lib/supabase"
+import BudgetAnalyticsComponent from "@/components/budgets/budget-analytics"
 import { 
   BarChart, 
   Bar, 
@@ -313,6 +314,11 @@ export default function AnalyticsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Budget Analytics Section */}
+      <div className="mt-12">
+        <BudgetAnalyticsComponent />
+      </div>
     </div>
   )
 }

@@ -305,5 +305,276 @@ export const db = {
     
     if (error) throw error
     return data || []
+  },
+
+  // Budgets
+  async getBudgets() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .select(`
+        *,
+        category:categories(*)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getBudget(id: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .select(`
+        *,
+        category:categories(*)
+      `)
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async createBudget({
+    category_id,
+    name,
+    amount_cents,
+    start_date,
+    recurrence_type,
+    recurrence_interval = 1,
+    end_date
+  }: {
+    category_id: string
+    name: string
+    amount_cents: number
+    start_date: string
+    recurrence_type: 'daily' | 'weekly' | 'monthly' | 'yearly'
+    recurrence_interval?: number
+    end_date?: string | null
+  }) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .insert({
+        user_id: user.id,
+        category_id,
+        name,
+        amount_cents,
+        start_date,
+        recurrence_type,
+        recurrence_interval,
+        end_date
+      })
+      .select(`
+        *,
+        category:categories(*)
+      `)
+    
+    if (error) throw error
+    
+    // Generate initial budget periods
+    if (data?.[0]?.id) {
+      const { error: periodError } = await supabase.rpc('generate_budget_periods', {
+        p_budget_id: data[0].id
+      })
+      if (periodError) {
+        console.error('Error generating budget periods:', periodError)
+      }
+    }
+    
+    return data[0]
+  },
+
+  async updateBudget(id: string, updates: {
+    name?: string
+    amount_cents?: number
+    start_date?: string
+    recurrence_type?: 'daily' | 'weekly' | 'monthly' | 'yearly'
+    recurrence_interval?: number
+    end_date?: string | null
+    is_active?: boolean
+  }) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select(`
+        *,
+        category:categories(*)
+      `)
+    
+    if (error) throw error
+    
+    // Regenerate budget periods if timing-related fields changed
+    if (updates.start_date || updates.recurrence_type || updates.recurrence_interval || updates.end_date) {
+      const { error: periodError } = await supabase.rpc('generate_budget_periods', {
+        p_budget_id: id
+      })
+      if (periodError) {
+        console.error('Error regenerating budget periods:', periodError)
+      }
+    }
+    
+    return data[0]
+  },
+
+  async deleteBudget(id: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { error } = await supabase
+      .from('budgets')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Budget Periods
+  async getBudgetPeriods(budgetId: string, limit = 12) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('budget_periods')
+      .select(`
+        *,
+        budget:budgets(
+          *,
+          category:categories(*)
+        )
+      `)
+      .eq('budget_id', budgetId)
+      .order('period_start', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getCurrentBudgetPeriod(budgetId: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const today = new Date().toISOString().split('T')[0] // Get YYYY-MM-DD format
+
+    const { data, error } = await supabase
+      .from('budget_periods')
+      .select(`
+        *,
+        budget:budgets(
+          *,
+          category:categories(*)
+        )
+      `)
+      .eq('budget_id', budgetId)
+      .lte('period_start', today)
+      .gte('period_end', today)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') throw error // Ignore "not found" error
+    return data
+  },
+
+  async refreshBudgetSpending() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { error } = await supabase.rpc('refresh_budget_spending')
+    if (error) throw error
+  },
+
+  async generateBudgetPeriods(budgetId: string, endDate?: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { error } = await supabase.rpc('generate_budget_periods', {
+      p_budget_id: budgetId,
+      p_end_date: endDate || null
+    })
+    if (error) throw error
+  },
+
+  // Budget Analytics
+  async getBudgetAnalytics(budgetId: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    // Get budget details
+    const budget = await this.getBudget(budgetId)
+    if (!budget) throw new Error('Budget not found')
+
+    // Get current period
+    const currentPeriod = await this.getCurrentBudgetPeriod(budgetId)
+    
+    // Get historical periods (last 12)
+    const historicalPeriods = await this.getBudgetPeriods(budgetId, 12)
+
+    // Calculate current period analytics
+    let currentAnalytics = null
+    if (currentPeriod) {
+      const remainingAmount = currentPeriod.budgeted_amount_cents - currentPeriod.spent_amount_cents
+      const percentageUsed = currentPeriod.budgeted_amount_cents > 0 
+        ? (currentPeriod.spent_amount_cents / currentPeriod.budgeted_amount_cents) * 100 
+        : 0
+      
+      const periodEnd = new Date(currentPeriod.period_end)
+      const today = new Date()
+      const daysRemaining = Math.max(0, Math.ceil((periodEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+
+      currentAnalytics = {
+        period_start: currentPeriod.period_start,
+        period_end: currentPeriod.period_end,
+        budgeted_amount_cents: currentPeriod.budgeted_amount_cents,
+        spent_amount_cents: currentPeriod.spent_amount_cents,
+        remaining_amount_cents: remainingAmount,
+        percentage_used: Math.round(percentageUsed * 100) / 100,
+        days_remaining: daysRemaining
+      }
+    }
+
+    // Process historical periods
+    const historicalAnalytics = historicalPeriods.map(period => ({
+      period_start: period.period_start,
+      period_end: period.period_end,
+      budgeted_amount_cents: period.budgeted_amount_cents,
+      spent_amount_cents: period.spent_amount_cents,
+      percentage_used: period.budgeted_amount_cents > 0 
+        ? Math.round((period.spent_amount_cents / period.budgeted_amount_cents) * 10000) / 100
+        : 0
+    }))
+
+    return {
+      budget_id: budget.id,
+      budget_name: budget.name,
+      category_name: budget.category?.name || 'Unknown',
+      current_period: currentAnalytics,
+      historical_periods: historicalAnalytics
+    }
+  },
+
+  async getAllBudgetAnalytics() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const budgets = await this.getBudgets()
+    const analytics = await Promise.all(
+      budgets.filter(budget => budget.is_active).map(budget => 
+        this.getBudgetAnalytics(budget.id)
+      )
+    )
+    
+    return analytics
   }
 }
