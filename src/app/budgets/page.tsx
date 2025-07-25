@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Plus, TrendingUp, TrendingDown, AlertTriangle, DollarSign } from 'lucide-react'
 import BudgetForm from '@/components/budgets/budget-form'
 import BudgetCard from '@/components/budgets/budget-card'
+import BudgetHistory from '@/components/budgets/budget-history'
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([])
@@ -16,6 +17,7 @@ export default function BudgetsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
+  const [viewingHistoryBudget, setViewingHistoryBudget] = useState<Budget | null>(null)
 
   useEffect(() => {
     loadData()
@@ -99,6 +101,14 @@ export default function BudgetsPage() {
     setEditingBudget(null)
   }
 
+  const handleViewHistory = (budget: Budget) => {
+    setViewingHistoryBudget(budget)
+  }
+
+  const handleCloseHistory = () => {
+    setViewingHistoryBudget(null)
+  }
+
   // Calculate summary stats
   const totalBudgeted = budgetAnalytics.reduce((sum, analytics) => 
     sum + (analytics.current_period?.budgeted_amount_cents || 0), 0)
@@ -123,6 +133,24 @@ export default function BudgetsPage() {
             ))}
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Show history view if a budget is selected
+  if (viewingHistoryBudget) {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={handleCloseHistory}
+            className="mb-4"
+          >
+            ← Back to Budgets
+          </Button>
+        </div>
+        <BudgetHistory budget={viewingHistoryBudget} />
       </div>
     )
   }
@@ -221,6 +249,7 @@ export default function BudgetsPage() {
                 analytics={analytics}
                 onEdit={() => handleEditBudget(budget)}
                 onDelete={() => handleDeleteBudget(budget.id)}
+                onViewHistory={() => handleViewHistory(budget)}
               />
             )
           })}

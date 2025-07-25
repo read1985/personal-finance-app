@@ -1,19 +1,22 @@
 'use client'
 
+import { useState } from 'react'
 import { Budget, BudgetAnalytics } from '@/types/database'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { PencilIcon, TrashIcon, Calendar, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
+import { PencilIcon, TrashIcon, Calendar, TrendingUp, TrendingDown, AlertTriangle, History, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface BudgetCardProps {
   budget: Budget
   analytics?: BudgetAnalytics
   onEdit: () => void
   onDelete: () => void
+  onViewHistory?: () => void
 }
 
-export default function BudgetCard({ budget, analytics, onEdit, onDelete }: BudgetCardProps) {
+export default function BudgetCard({ budget, analytics, onEdit, onDelete, onViewHistory }: BudgetCardProps) {
+  const [showHistory, setShowHistory] = useState(false)
   const currentPeriod = analytics?.current_period
   const isOverBudget = currentPeriod && currentPeriod.percentage_used > 100
   const isNearBudget = currentPeriod && currentPeriod.percentage_used > 80 && currentPeriod.percentage_used <= 100
@@ -63,10 +66,15 @@ export default function BudgetCard({ budget, analytics, onEdit, onDelete }: Budg
           </div>
         </div>
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={onEdit}>
+          {onViewHistory && (
+            <Button variant="ghost" size="sm" onClick={onViewHistory} title="View History">
+              <History className="w-4 h-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={onEdit} title="Edit Budget">
             <PencilIcon className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={onDelete}>
+          <Button variant="ghost" size="sm" onClick={onDelete} title="Delete Budget">
             <TrashIcon className="w-4 h-4" />
           </Button>
         </div>
@@ -145,15 +153,94 @@ export default function BudgetCard({ budget, analytics, onEdit, onDelete }: Budg
         </div>
       )}
 
-      {/* Budget Settings */}
+      {/* Actions */}
       <div className="pt-3 border-t border-slate-100">
-        <div className="flex justify-between items-center text-xs text-slate-500">
-          <span>Start: {formatDate(budget.start_date)}</span>
-          {budget.end_date && (
-            <span>End: {formatDate(budget.end_date)}</span>
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-xs text-slate-500">
+            <span>Start: {formatDate(budget.start_date)}</span>
+            {budget.end_date && (
+              <span className="ml-3">End: {formatDate(budget.end_date)}</span>
+            )}
+          </div>
+          
+          {analytics?.historical_periods && analytics.historical_periods.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowHistory(!showHistory)}
+              className="h-6 px-2 text-xs text-slate-600 hover:text-slate-900"
+            >
+              <History className="w-3 h-3 mr-1" />
+              History
+              {showHistory ? (
+                <ChevronUp className="w-3 h-3 ml-1" />
+              ) : (
+                <ChevronDown className="w-3 h-3 ml-1" />
+              )}
+            </Button>
           )}
         </div>
       </div>
+
+      {/* Historical Periods */}
+      {showHistory && analytics?.historical_periods && (
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <h4 className="text-sm font-medium text-slate-700 mb-3">Budget History</h4>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {analytics.historical_periods.slice(0, 12).map((period, index) => {
+              const isOverBudget = period.percentage_used > 100
+              const isNearBudget = period.percentage_used > 80 && period.percentage_used <= 100
+              const isUnderBudget = period.percentage_used <= 80
+              
+              return (
+                <div key={index} className="p-2 bg-slate-50 rounded text-xs">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-medium">
+                      {formatDate(period.period_start)} - {formatDate(period.period_end)}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {isOverBudget && <AlertTriangle className="w-3 h-3 text-red-500" />}
+                      {isNearBudget && <TrendingUp className="w-3 h-3 text-amber-500" />}
+                      {isUnderBudget && <TrendingDown className="w-3 h-3 text-emerald-500" />}
+                      <span className={`font-medium ${
+                        isOverBudget ? 'text-red-600' : 
+                        isNearBudget ? 'text-amber-600' : 
+                        'text-emerald-600'
+                      }`}>
+                        {period.percentage_used.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between text-slate-600">
+                    <span>Spent: ${(period.spent_amount_cents / 100).toFixed(2)}</span>
+                    <span className={
+                      period.spent_amount_cents > period.budgeted_amount_cents 
+                        ? 'text-red-600' 
+                        : 'text-emerald-600'
+                    }>
+                      {period.spent_amount_cents <= period.budgeted_amount_cents ? 'Under' : 'Over'}: 
+                      ${(Math.abs(period.budgeted_amount_cents - period.spent_amount_cents) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {/* Mini Progress Bar */}
+                  <div className="w-full bg-slate-200 rounded-full h-1 mt-1">
+                    <div
+                      className={`h-1 rounded-full transition-all ${
+                        isOverBudget ? 'bg-red-500' : 
+                        isNearBudget ? 'bg-amber-500' : 
+                        'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(period.percentage_used, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </Card>
   )
 }
