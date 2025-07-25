@@ -66,7 +66,7 @@ export default function BudgetHistory({ budget }: BudgetHistoryProps) {
   }
 
   // Prepare chart data
-  const chartData = analytics.historical_periods.slice(-12).map((period, index) => ({
+  const chartData = analytics.historical_periods.slice(-12).map((period) => ({
     period: `${new Date(period.period_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(period.period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
     budgeted: period.budgeted_amount_cents / 100,
     spent: period.spent_amount_cents / 100,
@@ -187,7 +187,7 @@ export default function BudgetHistory({ budget }: BudgetHistoryProps) {
                   ]}
                 />
                 <Bar dataKey="budgeted" fill="#3b82f6" name="budgeted" />
-                <Bar dataKey="spent" fill={(entry: any) => entry.over ? '#ef4444' : '#10b981'} name="spent" />
+                <Bar dataKey="spent" fill="#10b981" name="spent" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
