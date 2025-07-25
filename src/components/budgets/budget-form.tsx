@@ -25,7 +25,6 @@ interface BudgetFormProps {
 
 export default function BudgetForm({ budget, categories, onSubmit, onClose }: BudgetFormProps) {
   const [formData, setFormData] = useState({
-    name: '',
     category_id: '',
     amount: '',
     start_date: '',
@@ -40,7 +39,6 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
   useEffect(() => {
     if (budget) {
       setFormData({
-        name: budget.name,
         category_id: budget.category_id,
         amount: (budget.amount_cents / 100).toString(),
         start_date: budget.start_date,
@@ -61,10 +59,6 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
     setError('')
     
     // Validation
-    if (!formData.name.trim()) {
-      setError('Budget name is required')
-      return
-    }
     if (!formData.category_id) {
       setError('Please select a category')
       return
@@ -81,8 +75,12 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
     try {
       setLoading(true)
       
+      // Get the category name for the budget name
+      const selectedCategory = categories.find(cat => cat.id === formData.category_id)
+      const budgetName = selectedCategory?.name || 'Unknown Category'
+      
       const submitData = {
-        name: formData.name.trim(),
+        name: budgetName,
         category_id: formData.category_id,
         amount_cents: Math.round(parseFloat(formData.amount) * 100),
         start_date: formData.start_date,
@@ -129,20 +127,6 @@ export default function BudgetForm({ budget, categories, onSubmit, onClose }: Bu
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Budget Name */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Budget Name
-              </label>
-              <Input
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="e.g., Groceries, Entertainment, Gas"
-                className="border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-
             {/* Category */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
