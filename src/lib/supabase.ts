@@ -446,7 +446,8 @@ export const db = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    const { data, error } = await supabase
+    // Get periods with spending data first, then fill with recent periods
+    const { data: periodsWithSpending, error: spendingError } = await supabase
       .from('budget_periods')
       .select(`
         *,
@@ -456,11 +457,38 @@ export const db = {
         )
       `)
       .eq('budget_id', budgetId)
+      .gt('spent_amount_cents', 0)
       .order('period_start', { ascending: false })
       .limit(limit)
     
-    if (error) throw error
-    return data || []
+    if (spendingError) throw spendingError
+
+    // If we don't have enough periods with spending, fill with recent periods
+    if (!periodsWithSpending || periodsWithSpending.length < limit) {
+      const { data: allPeriods, error: allError } = await supabase
+        .from('budget_periods')
+        .select(`
+          *,
+          budget:budgets(
+            *,
+            category:categories(*)
+          )
+        `)
+        .eq('budget_id', budgetId)
+        .order('period_start', { ascending: false })
+        .limit(limit)
+      
+      if (allError) throw allError
+      
+      // Merge and deduplicate, prioritizing periods with spending
+      const spendingIds = new Set(periodsWithSpending?.map(p => p.id) || [])
+      const additionalPeriods = (allPeriods || []).filter(p => !spendingIds.has(p.id))
+      
+      const combined = [...(periodsWithSpending || []), ...additionalPeriods].slice(0, limit)
+      return combined.sort((a, b) => new Date(b.period_start).getTime() - new Date(a.period_start).getTime())
+    }
+    
+    return periodsWithSpending || []
   },
 
   async getCurrentBudgetPeriod(budgetId: string) {
